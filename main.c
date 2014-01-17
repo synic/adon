@@ -1,3 +1,16 @@
+/*
+ Application Name: Adon
+ Description: A simon clone
+ Author: Adam Olsen
+ Email: arolsen@gmail.com
+ Date: Jan 14, 2014
+ Version: 0.5
+ License: Apache v2
+
+ This is written for the Amtel ATtiny84 chip.  A schematic and a board for this 
+ can be found in eagle/ directory.
+*/
+
 #define F_CPU 8000000UL
 #include <avr/eeprom.h>
 #include <avr/io.h>
