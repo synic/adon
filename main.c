@@ -183,6 +183,9 @@ void setup_gamemode(void) {
         game_mode = 0;
 }
 
+/**
+ * Sets up the level based on the game mode.
+ */
 void setup_level(void) {
     loop_count = 0;
     setup_gamemode();
@@ -226,6 +229,9 @@ void setup_level(void) {
     }
 }
 
+/**
+ * Reset in game variables
+ */
 void reset_game(void) {
     tone_duration = INITIAL_TONE_DURATION;
     level = 1;
@@ -295,6 +301,10 @@ void button_release(uint8_t index) {
     }
 }
 
+/*
+ * Check button press, with debounce. Works great with the COM-00097 buttons
+ * from SparkFun
+ */
 void check_button_press(uint8_t index) {
     if(bit_is_clear(PINA, BUTTONS[index])) {
         delay(50);
