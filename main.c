@@ -44,7 +44,7 @@
 // various game constants
 #define ERROR_TONE NOTE_C3
 #define WON_TONE NOTE_A5
-#define MAX_LEVELS 50
+#define MAX_LEVELS 20
 #define NEXT_GAME_PAUSE_DURATION 800
 #define INCREASE_SPEED_LEVELS 3
 #define INCREASE_SPEED_AMOUNT 20
@@ -135,7 +135,7 @@ int main(void) {
 }
 
 void delay(long millis) {
-    for(uint8_t i = 0; i < millis; i++) _delay_ms(1);
+    for(long i = 0; i < millis; i++) _delay_ms(1);
 }
 
 void no_tone(void) {
