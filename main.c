@@ -113,6 +113,8 @@ int main(void) {
     tone_duration = INITIAL_TONE_DURATION;
     for(uint8_t i = 0; i < 4; i++) button_pressed[i] = 0;
 
+    delay(2000); // delay 2 seconds before starting the game.
+
     // loop forever
     while(1) { 
         if(!input_mode) {

@@ -154,6 +154,7 @@ AVRDUDE_FLAGS += -v -v
 
 #AVRDUDE_WRITE_FLASH = -U lfuse:w:0x01:m #run with 1 Mhz clock no start up time
 #AVRDUDE_WRITE_FLASH = -U lfuse:w:0xe2:m -U hfuse:w:0xde:m -U efuse:w:0xff:m
+# AVRDUDE_WRITE_FLASH = -U lfuse:w:0xe2:m -U hfuse:w:0xdd:m -U efuse:w:0xff:m
 
 # ---------------------------------------------------------------------------
 
