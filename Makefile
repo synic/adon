@@ -235,6 +235,11 @@ end:
 	@echo
 
 
+writefuses: readfuses install
+
+readfuses:
+	$(eval AVRDUDE_WRITE_FLASH := $(shell cat fuses.txt))
+
 # Display size of file.
 sizebefore:
 	@if [ -f $(TARGET).elf ]; then echo; echo $(MSG_SIZE_BEFORE); $(ELFSIZE); echo; fi
