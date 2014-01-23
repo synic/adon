@@ -147,7 +147,7 @@ void no_tone(void) {
 
 void tone(int frequency, long delay_millis) {
     OCR0A = ((F_CPU / 64.0) / (frequency * 2.0)) - 1;
-    TCCR0B = _BV(CS01) | _BV(CS00);      // set prescaler to 1024 
+    TCCR0B = _BV(CS01) | _BV(CS00);      // set prescaler to 64
 
     if(delay_millis > -1) {
         delay(delay_millis);
