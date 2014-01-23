@@ -59,7 +59,7 @@ const uint8_t LEDS[4] = {LED1, LED2, LED3, LED4};
 const uint8_t BUTTONS[4] = {BUTTON1, BUTTON2, BUTTON3, BUTTON4};
 
 uint8_t game_mode;
-uint8_t button_pressed[4];
+int button_pressed;
 uint8_t level_sequence[10];
 uint8_t level;
 uint8_t input_mode;
@@ -111,7 +111,7 @@ int main(void) {
     input_mode = 0;
     current_step = -1;
     tone_duration = INITIAL_TONE_DURATION;
-    for(uint8_t i = 0; i < 4; i++) button_pressed[i] = 0;
+    button_pressed = -1;
 
     delay(2000); // delay 2 seconds before starting the game.
 
@@ -309,17 +309,20 @@ void button_release(uint8_t index) {
  */
 void check_button_press(uint8_t index) {
     if(bit_is_clear(PINA, BUTTONS[index])) {
+        if(button_pressed > -1) return;
+
         delay(50);
         if(bit_is_clear(PINA, BUTTONS[index])) {
-            button_pressed[index] = 1;
+            button_pressed = index;
             button_press(index);
         }
     }
     
-    if(button_pressed[index] && !bit_is_clear(PINA, BUTTONS[index])) {
+    if(button_pressed == index && 
+        !bit_is_clear(PINA, BUTTONS[index])) {
         delay(50);
         if(!bit_is_clear(PINA, BUTTONS[index])) {
-            button_pressed[index] = 0;
+            button_pressed = -1;
             button_release(index);
         }
     }
