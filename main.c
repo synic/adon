@@ -7,7 +7,7 @@
  Version: 0.5
  License: Apache v2
 
- This is written for the Amtel ATtiny84 chip.  A schematic and a board for this 
+ This is written for the Amtel ATtiny84a chip.  A schematic and a board for this 
  can be found in eagle/ directory.
 */
 
