@@ -11,7 +11,7 @@
  can be found in eagle/ directory.
 */
 
-#define F_CPU 8000000UL
+#define F_CPU 1000000UL
 #include <avr/eeprom.h>
 #include <avr/io.h>
 #include <util/delay.h>
@@ -51,7 +51,7 @@
 #define PAUSE_DURATION 200
 #define INITIAL_TONE_DURATION 500
 #define MAX_SPEED 200
-#define MAX_LOOPS 200000UL
+#define MAX_LOOPS 200000UL / 8
 
 const unsigned int TONES_FOR_BUTTON[5] = {NOTE_E3, NOTE_CS3, NOTE_A3, NOTE_E2,
     NOTE_A3};
@@ -146,8 +146,8 @@ void no_tone(void) {
 }
 
 void tone(int frequency, long delay_millis) {
-    OCR0A = ((F_CPU / 1024.0) / (frequency * 2.0)) - 1;
-    TCCR0B = _BV(CS02) | _BV(CS00);      // set prescaler to 1024 
+    OCR0A = ((F_CPU / 64.0) / (frequency * 2.0)) - 1;
+    TCCR0B = _BV(CS01) | _BV(CS00);      // set prescaler to 64
 
     if(delay_millis > -1) {
         delay(delay_millis);
