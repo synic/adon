@@ -7,22 +7,41 @@
 #define F_CPU 4000000 // 4Mhz
 
 // constants
-#define FLASH_RAND_OPERATION_ADDRESS ((uint32_t)0x08003800)
-#define FLASH_PAGE_SIZE 0x800
-#define FLASH_WRONG_DATA_WRITTEN 0x80
-#define FLASH_RAND_BUFFER_SIZE 4
-#define RESULT_OK 0
+#define NOTE_E3                         165
+#define NOTE_CS3                        139
+#define NOTE_A3                         220
+#define NOTE_E2                         82
+#define NOTE_C3                         131
+#define NOTE_A5                         880
+
+#define ERROR_TONE                      NOTE_C3
+#define WON_TONE                        NOTE_A5
+#define MAX_LEVELS                      20
+#define NEXT_GAME_PAUSE_DURATION        800
+#define INCREASE_SPEED_LEVELS           3
+#define INCREASE_SPEED_AMOUNT           20
+#define PAUSE_DURATION                  200
+#define INITIAL_TONE_DURATION           500
+#define MAX_SPEED                       200
+#define MAX_LOOPS                       (F_CPU * 4) / 16
+
+#define FLASH_RAND_OPERATION_ADDRESS    ((uint32_t)0x08003800)
+#define FLASH_PAGE_SIZE                 0x800
+#define FLASH_WRONG_DATA_WRITTEN        0x80
+#define FLASH_RAND_BUFFER_SIZE          4
+#define RESULT_OK                       0
 
 const uint8_t LEDS[4] = {GPIO0, GPIO1, GPIO2, GPIO3};
 const uint8_t BUTTONS[4] = {GPIO4, GPIO5, GPIO6, GPIO7};
+const uint16_t TONE_FOR_BUTTON[4] = {NOTE_E3, NOTE_CS3, NOTE_A3, NOTE_E2};
 
 // non-constant state information
-uint8_t button_pressed;
-uint8_t level_sequence[30];
+int8_t button_pressed;
+uint8_t level_sequence[50];
 uint8_t level;
 uint8_t input_mode;
 uint32_t loop_count;
-uint8_t current_step;
+int8_t current_step;
 uint32_t tone_duration;
 uint32_t randint;
 uint8_t error = 0;
@@ -66,6 +85,142 @@ static uint32_t flash_program_data(uint32_t start_address, uint32_t data) {
     }
 
     return 0;
+}
+
+
+static void reset_game(void) {
+    tone_duration = INITIAL_TONE_DURATION;
+    level = 1;
+    input_mode = 0;
+    loop_count = 0;
+}
+
+static void tone_off(void) {
+    // TODO: actually turn the tone off
+}
+
+static void tone(uint16_t frequency, int32_t millis) {
+    // TODO: actually activate the timer for the buzzer ;-)
+    if(millis > -1) {
+        delay(millis);
+        tone_off();
+    }
+}
+
+static void game_over(void) {
+    reset_game();
+
+    gpio_set(GPIOB, GPIO1);
+    tone(ERROR_TONE, 1000);
+    delay(NEXT_GAME_PAUSE_DURATION * 2);
+    gpio_clear(GPIOB, GPIO1);
+    delay(NEXT_GAME_PAUSE_DURATION * 2);
+}
+
+static void game_won(void) {
+    reset_game();
+    delay(200);
+    uint8_t i, a;
+    for(i = 0; i < 8; i++) {
+        for(a = 0; a < 4; a++) {
+            gpio_set(GPIOA, LEDS[a]);
+            tone(WON_TONE, 100);
+            delay(50);
+            gpio_clear(GPIOA, LEDS[a]);
+        }
+    }
+
+    delay(NEXT_GAME_PAUSE_DURATION);
+}
+
+static void setup_level(void) {
+    loop_count = 0;
+    
+    if(level > 1 && (level % INCREASE_SPEED_LEVELS == 0)) {
+        uint8_t mult = level / INCREASE_SPEED_LEVELS;
+        tone_duration -= INCREASE_SPEED_AMOUNT * mult;
+        if(tone_duration < MAX_SPEED) {
+            tone_duration = MAX_SPEED;
+        }
+    }
+
+    current_step = -1;
+    uint8_t start_sequence = 0;
+    uint8_t i = 0;
+    start_sequence = level - 1;
+
+    for(i = 0; i < level; i++) {
+        uint8_t step;
+
+        if(start_sequence > 0) {
+            if(start_sequence == i) {
+                step = rand() % 4;
+            }
+            else {
+                step = level_sequence[i];
+            }
+        }
+        else {
+            step = level_sequence[i];
+        }
+
+        level_sequence[i] = step;
+        gpio_set(GPIOA, LEDS[step]);
+        tone(TONE_FOR_BUTTON[step], tone_duration);
+        gpio_clear(GPIOA, LEDS[step]);
+        delay(PAUSE_DURATION);
+    }
+}
+
+static void button_press(uint8_t index) {
+    gpio_set(GPIOA, LEDS[index]);
+    tone(TONE_FOR_BUTTON[index], -1);
+}
+
+static void button_release(uint8_t index) {
+    gpio_clear(GPIOA, LEDS[index]);
+
+    tone_off();
+
+    current_step += 1;
+    if(index != level_sequence[current_step]) {
+        game_over();
+        return;
+    }
+
+    if(current_step + 1 >= level) {
+        input_mode = 0;
+        level ++;
+
+        if(level > MAX_LEVELS) {
+            game_won();
+            return;
+        }
+
+        delay(NEXT_GAME_PAUSE_DURATION);
+    }
+}
+
+static void check_button_press(uint8_t index) {
+    if(gpio_get(GPIOA, BUTTONS[index])) {
+        if(button_pressed > -1) return;
+
+        delay(50); // wait for debounce
+        if(gpio_get(GPIOA, BUTTONS[index])) {
+            button_pressed = index;
+            button_press(index);
+        }
+    }
+
+    if(button_pressed == index &&
+        !gpio_get(GPIOA, BUTTONS[index])) {
+        
+        delay(50);
+        if(!gpio_get(GPIOA, BUTTONS[index])) {
+            button_pressed = -1;
+            button_release(index);
+        }
+    }
 }
 
 static void setup_clock(void) {
@@ -114,16 +269,35 @@ static void random_seed(void) {
 int main(void) {
     setup_clock();
     setup_gpio();
-    random_seed();
+    //random_seed();
+
+    // set up the game
+    level = 1;
+    input_mode = 0;
+    current_step = -1;
+    button_pressed = -1;
+    tone_duration = INITIAL_TONE_DURATION;
+    uint8_t i;
+
+    delay(2000); // delay 2 seconds before starting the game
 
 
     while(1) {
-        int led = rand() % 4;
-        gpio_toggle(GPIOA, (1 << led));
-        delay(1000);
-        gpio_toggle(GPIOB, GPIO1);
-        gpio_toggle(GPIOA, (1 << led));
-        delay(1000);
+        if(!input_mode) {
+            setup_level();
+            input_mode = 1;
+        }
+        else {
+            for(i = 0; i < 4; i++) {
+                check_button_press(i);
+            }
+
+            if(loop_count > MAX_LOOPS) {
+                game_over();
+            }
+
+            loop_count ++;
+        }
     }
 
     return 0;
