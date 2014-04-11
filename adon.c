@@ -5,7 +5,7 @@
 #define F_CPU 4000000
 
 static void delay(uint32_t time) {
-    volatile uint32_t loops = (F_CPU / 1000) * time;
+    volatile uint32_t loops = ((F_CPU / 1000) * time) / 16;
     volatile uint32_t i;
     for(i = 0; i < loops; i++) {
         __asm__("nop");
@@ -32,7 +32,7 @@ static void setup_gpio(void) {
     rcc_periph_clock_enable(RCC_GPIOB);
 
     // set up the pin for the FAIL led
-    gpio_mode_setup(GPIOB, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE,
+    /*gpio_mode_setup(GPIOB, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE,
         GPIO1);
 
     // set up the pin for the timer output (for the little buzzer)
@@ -40,7 +40,7 @@ static void setup_gpio(void) {
     gpio_set_output_options(GPIOA, GPIO_OTYPE_PP, GPIO_OSPEED_LOW, GPIO10);
 
     // GPIO_AF2 == TIM1, CHANNEL 3 for PA10 (see on page 31 of the datasheet)
-    gpio_set_af(GPIOA, GPIO_AF2, GPIO10);
+    gpio_set_af(GPIOA, GPIO_AF2, GPIO10);*/
 }
 
 int main(void) {
