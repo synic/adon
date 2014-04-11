@@ -2,62 +2,55 @@
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/stm32/timer.h>
 
-static void clock_setup(void) {
-    rcc_clock_setup_in_hsi_8mhz_out_48mhz();
+#define F_CPU 4000000
+
+static void delay(uint32_t time) {
+    volatile uint32_t loops = (F_CPU / 1000) * time;
+    volatile uint32_t i;
+    for(i = 0; i < loops; i++) {
+        __asm__("nop");
+    }
 }
 
-static void timer_setup(void) {
-    rcc_periph_clock_enable(RCC_TIM3);                  
-
-    timer_reset(TIM3);
-    timer_set_mode(TIM3, TIM_CR1_CKD_CK_INT, TIM_CR1_CMS_EDGE, TIM_CR1_DIR_UP);
-    int prescaler = (uint16_t) ((48000000 / 2) / 21000000) - 1;
-
-    timer_set_prescaler(TIM3, prescaler);
-    timer_enable_preload(TIM3);
-    timer_continuous_mode(TIM3);
-    timer_set_period(TIM3, 665);
-    timer_disable_oc_output(TIM3, TIM_OC2);
-    timer_set_oc_mode(TIM3, TIM_OC2, TIM_OCM_PWM1);
-    timer_set_oc_value(TIM3, TIM_OC2, 500);
-    timer_enable_oc_output(TIM3, TIM_OC2);
-    timer_enable_preload_complementry_enable_bits(TIM3);
-    timer_enable_counter(TIM3);
+static void setup_clock(void) {
+    // set clock to 4MHz, the lowest it can go
+    rcc_clock_setup_in_hsi_out_4mhz();
 }
 
-static void gpio_setup(void) {
-	rcc_periph_clock_enable(RCC_GPIOA);
-    gpio_mode_setup(GPIOA, GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO7);
-    gpio_set_output_options(GPIOA, GPIO_OTYPE_PP, GPIO_OSPEED_HIGH, GPIO7);
-    gpio_set_af(GPIOA, GPIO_AF1, GPIO7);
+static void setup_gpio(void) {
+    rcc_periph_clock_enable(RCC_GPIOA);
+
+    // set up pins for the 4 leds
+    gpio_mode_setup(GPIOA, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, 
+        GPIO0 | GPIO1 | GPIO2 | GPIO3);
+
+    // set up pins for the 4 buttons, with an internal pulldown resistor
+    // (pushing the button will cause the pin to go HIGH)
+    gpio_mode_setup(GPIOA, GPIO_MODE_INPUT, GPIO_PUPD_PULLDOWN,
+        GPIO4 | GPIO5 | GPIO6 | GPIO7);
+
+    rcc_periph_clock_enable(RCC_GPIOB);
+
+    // set up the pin for the FAIL led
+    gpio_mode_setup(GPIOB, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE,
+        GPIO1);
+
+    // set up the pin for the timer output (for the little buzzer)
+    gpio_mode_setup(GPIOA, GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO10);
+    gpio_set_output_options(GPIOA, GPIO_OTYPE_PP, GPIO_OSPEED_LOW, GPIO10);
+
+    // GPIO_AF2 == TIM1, CHANNEL 3 for PA10 (see on page 31 of the datasheet)
+    gpio_set_af(GPIOA, GPIO_AF2, GPIO10);
 }
 
 int main(void) {
-    clock_setup();
-	gpio_setup();
-    timer_setup();
+    setup_clock();
+    setup_gpio();
 
-	volatile int i;
-    volatile int brightness = 0;
-    volatile int up = 1;
-
-    while (1) {
-        if (up) {
-            brightness++;
-        } else {
-            brightness--;
-        }
-
-        if (brightness >= 700) {
-            up = 0;
-        } else if (brightness <= 0) {
-            up = 1;
-        }
-
-        timer_set_oc_value(TIM3, TIM_OC2, brightness);
-
-        for(i = 0; i < 2500; i++);
+    while(1) {
+        gpio_toggle(GPIOA, GPIO0);
+        delay(1000);
     }
 
-	return 0;
+    return 0;
 }
