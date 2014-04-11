@@ -23,7 +23,7 @@
 #define PAUSE_DURATION                  200
 #define INITIAL_TONE_DURATION           500
 #define MAX_SPEED                       200
-#define MAX_LOOPS                       (F_CPU * 4) / 16
+#define MAX_LOOPS                       (F_CPU * 4) / 64
 
 #define FLASH_RAND_OPERATION_ADDRESS    ((uint32_t)0x08003800)
 #define FLASH_PAGE_SIZE                 0x800
@@ -110,10 +110,10 @@ static void tone(uint16_t frequency, int32_t millis) {
 static void game_over(void) {
     reset_game();
 
-    gpio_set(GPIOB, GPIO1);
+    gpio_toggle(GPIOA, GPIO9);
     tone(ERROR_TONE, 1000);
     delay(NEXT_GAME_PAUSE_DURATION * 2);
-    gpio_clear(GPIOB, GPIO1);
+    gpio_toggle(GPIOA, GPIO9);
     delay(NEXT_GAME_PAUSE_DURATION * 2);
 }
 
@@ -230,7 +230,6 @@ static void setup_clock(void) {
 
 static void setup_gpio(void) {
     rcc_periph_clock_enable(RCC_GPIOA);
-    rcc_periph_clock_enable(RCC_GPIOB);
 
     // set up pins for the 4 leds
     gpio_mode_setup(GPIOA, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, 
@@ -242,8 +241,8 @@ static void setup_gpio(void) {
         GPIO4 | GPIO5 | GPIO6 | GPIO7);
 
     // set up the pin for the FAIL led
-    gpio_mode_setup(GPIOB, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE,
-        GPIO1);
+    gpio_mode_setup(GPIOA, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE,
+        GPIO9);
 
     // set up the pin for the timer output (for the little buzzer)
     gpio_mode_setup(GPIOA, GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO10);
@@ -262,14 +261,16 @@ static void random_seed(void) {
 
     if(result != 0) {
         error = 1;
-        gpio_toggle(GPIOB, GPIO1);
+        gpio_toggle(GPIOA, GPIO9);
+        delay(1000);
+        gpio_toggle(GPIOA, GPIO9);
     }
 }
 
 int main(void) {
     setup_clock();
     setup_gpio();
-    //random_seed();
+    random_seed();
 
     // set up the game
     level = 1;
