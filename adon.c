@@ -20,7 +20,7 @@
 #define NEXT_GAME_PAUSE_DURATION        800
 #define INCREASE_SPEED_LEVELS           3
 #define INCREASE_SPEED_AMOUNT           20
-#define PAUSE_DURATION                  200
+#define PAUSE_DURATION                  250
 #define INITIAL_TONE_DURATION           500
 #define MAX_SPEED                       200
 #define MAX_LOOPS                       (F_CPU * 4) / 64
