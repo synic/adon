@@ -96,11 +96,14 @@ static void reset_game(void) {
 }
 
 static void tone_off(void) {
-    // TODO: actually turn the tone off
+    timer_disable_counter(TIM1);
 }
 
 static void tone(uint16_t frequency, int32_t millis) {
-    // TODO: actually activate the timer for the buzzer ;-)
+    timer_disable_oc_output(TIM1, TIM_OC3);
+    timer_set_period(TIM1, 1000000 / frequency); 
+    timer_set_oc_value(TIM1, TIM_OC3, (1000000 / frequency) / 2);
+    timer_enable_counter(TIM1);
     if(millis > -1) {
         delay(millis);
         tone_off();
@@ -150,7 +153,7 @@ static void setup_level(void) {
     start_sequence = level - 1;
 
     for(i = 0; i < level; i++) {
-        uint8_t step;
+        volatile uint8_t step;
 
         if(start_sequence > 0) {
             if(start_sequence == i) {
@@ -161,7 +164,7 @@ static void setup_level(void) {
             }
         }
         else {
-            step = level_sequence[i];
+            step = rand() % 4;
         }
 
         level_sequence[i] = step;
@@ -223,12 +226,12 @@ static void check_button_press(uint8_t index) {
     }
 }
 
-static void setup_clock(void) {
+static void clock_setup(void) {
     // set clock to 4MHz, the lowest it can go
     rcc_clock_setup_in_hsi_out_4mhz();
 }
 
-static void setup_gpio(void) {
+static void gpio_setup(void) {
     rcc_periph_clock_enable(RCC_GPIOA);
 
     // set up pins for the 4 leds
@@ -246,10 +249,23 @@ static void setup_gpio(void) {
 
     // set up the pin for the timer output (for the little buzzer)
     gpio_mode_setup(GPIOA, GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO10);
-    gpio_set_output_options(GPIOA, GPIO_OTYPE_PP, GPIO_OSPEED_LOW, GPIO10);
+    gpio_set_output_options(GPIOA, GPIO_OTYPE_PP, GPIO_OSPEED_HIGH, GPIO10);
 
     // GPIO_AF2 == TIM1, CHANNEL 3 for PA10 (see on page 31 of the datasheet)
     gpio_set_af(GPIOA, GPIO_AF2, GPIO10);
+}
+
+static void timer_setup(void) {
+    rcc_periph_clock_enable(RCC_TIM1);
+    timer_reset(TIM1);
+    timer_set_mode(TIM3, TIM_CR1_CKD_CK_INT, TIM_CR1_CMS_EDGE, TIM_CR1_DIR_UP);
+    timer_set_prescaler(TIM1, 4);
+    timer_enable_preload(TIM1);
+    timer_continuous_mode(TIM1);
+    timer_enable_preload_complementry_enable_bits(TIM1);
+    timer_disable_oc_output(TIM1, TIM_OC3);
+    timer_set_oc_mode(TIM1, TIM_OC3, TIM_OCM_PWM1);
+    timer_enable_oc_output(TIM1, TIM_OC3);
 }
 
 static void random_seed(void) {
@@ -268,8 +284,9 @@ static void random_seed(void) {
 }
 
 int main(void) {
-    setup_clock();
-    setup_gpio();
+    clock_setup();
+    gpio_setup();
+    timer_setup();
     random_seed();
 
     // set up the game
@@ -278,10 +295,9 @@ int main(void) {
     current_step = -1;
     button_pressed = -1;
     tone_duration = INITIAL_TONE_DURATION;
-    uint8_t i;
+    uint16_t i;
 
     delay(2000); // delay 2 seconds before starting the game
-
 
     while(1) {
         if(!input_mode) {
