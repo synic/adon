@@ -96,14 +96,14 @@ static void reset_game(void) {
 }
 
 static void tone_off(void) {
-    timer_disable_counter(TIM1);
+    timer_disable_counter(TIM3);
 }
 
 static void tone(uint16_t frequency, int32_t millis) {
-    timer_disable_oc_output(TIM1, TIM_OC3);
-    timer_set_period(TIM1, 1000000 / frequency); 
-    timer_set_oc_value(TIM1, TIM_OC3, (1000000 / frequency) / 2);
-    timer_enable_counter(TIM1);
+    timer_disable_oc_output(TIM3, TIM_OC2);
+    timer_set_period(TIM3, 1000000 / frequency); 
+    timer_set_oc_value(TIM3, TIM_OC2, (1000000 / frequency) / 2);
+    timer_enable_counter(TIM3);
     if(millis > -1) {
         delay(millis);
         tone_off();
@@ -241,31 +241,31 @@ static void gpio_setup(void) {
     // set up pins for the 4 buttons, with an internal pulldown resistor
     // (pushing the button will cause the pin to go HIGH)
     gpio_mode_setup(GPIOA, GPIO_MODE_INPUT, GPIO_PUPD_PULLDOWN,
-        GPIO4 | GPIO5 | GPIO6 | GPIO7);
+        GPIO4 | GPIO5 | GPIO6 | GPIO10);
 
     // set up the pin for the FAIL led
     gpio_mode_setup(GPIOA, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE,
         GPIO9);
 
     // set up the pin for the timer output (for the little buzzer)
-    gpio_mode_setup(GPIOA, GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO10);
-    gpio_set_output_options(GPIOA, GPIO_OTYPE_PP, GPIO_OSPEED_HIGH, GPIO10);
+    gpio_mode_setup(GPIOA, GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO7);
+    gpio_set_output_options(GPIOA, GPIO_OTYPE_PP, GPIO_OSPEED_LOW, GPIO7);
 
-    // GPIO_AF2 == TIM1, CHANNEL 3 for PA10 (see on page 31 of the datasheet)
-    gpio_set_af(GPIOA, GPIO_AF2, GPIO10);
+    // GPIO_AF2 == TIM3, CHANNEL 2 for PA7 (see on page 31 of the datasheet)
+    gpio_set_af(GPIOA, GPIO_AF1, GPIO7);
 }
 
 static void timer_setup(void) {
-    rcc_periph_clock_enable(RCC_TIM1);
-    timer_reset(TIM1);
+    rcc_periph_clock_enable(RCC_TIM3);
+    timer_reset(TIM3);
     timer_set_mode(TIM3, TIM_CR1_CKD_CK_INT, TIM_CR1_CMS_EDGE, TIM_CR1_DIR_UP);
-    timer_set_prescaler(TIM1, 4);
-    timer_enable_preload(TIM1);
-    timer_continuous_mode(TIM1);
-    timer_enable_preload_complementry_enable_bits(TIM1);
-    timer_disable_oc_output(TIM1, TIM_OC3);
-    timer_set_oc_mode(TIM1, TIM_OC3, TIM_OCM_PWM1);
-    timer_enable_oc_output(TIM1, TIM_OC3);
+    timer_set_prescaler(TIM3, 4);
+    timer_enable_preload(TIM3);
+    timer_continuous_mode(TIM3);
+    timer_enable_preload_complementry_enable_bits(TIM3);
+    timer_disable_oc_output(TIM3, TIM_OC2);
+    timer_set_oc_mode(TIM3, TIM_OC2, TIM_OCM_TOGGLE);
+    timer_enable_oc_output(TIM3, TIM_OC2);
 }
 
 static void random_seed(void) {
