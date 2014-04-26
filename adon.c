@@ -14,7 +14,7 @@
 #define NOTE_C3                         131
 #define NOTE_A5                         880
 
-#define ERROR_TONE                      NOTE_C3
+#define ERROR_TONE                      NOTE_E2
 #define WON_TONE                        NOTE_A5
 #define MAX_LEVELS                      20
 #define NEXT_GAME_PAUSE_DURATION        800
@@ -24,6 +24,7 @@
 #define INITIAL_TONE_DURATION           500
 #define MAX_SPEED                       200
 #define MAX_LOOPS                       (F_CPU * 4) / 64
+#define TIM3_PRESCALER                  4
 
 #define FLASH_RAND_OPERATION_ADDRESS    ((uint32_t)0x08003800)
 #define FLASH_PAGE_SIZE                 0x800
@@ -32,7 +33,7 @@
 #define RESULT_OK                       0
 
 const uint8_t LEDS[4] = {GPIO0, GPIO1, GPIO2, GPIO3};
-const uint8_t BUTTONS[4] = {GPIO4, GPIO5, GPIO6, GPIO7};
+const uint16_t BUTTONS[4] = {GPIO4, GPIO5, GPIO6, GPIO10};
 const uint16_t TONE_FOR_BUTTON[4] = {NOTE_E3, NOTE_CS3, NOTE_A3, NOTE_E2};
 
 // non-constant state information
@@ -101,8 +102,18 @@ static void tone_off(void) {
 
 static void tone(uint16_t frequency, int32_t millis) {
     timer_disable_oc_output(TIM3, TIM_OC2);
-    timer_set_period(TIM3, 1000000 / frequency); 
-    timer_set_oc_value(TIM3, TIM_OC2, (1000000 / frequency) / 2);
+
+    frequency *= 12;
+
+    uint8_t prescaler = TIM3_PRESCALER;
+    uint16_t clock = F_CPU / prescaler;
+    uint16_t div = clock / frequency;
+    uint16_t period = (clock / div) - 1;
+    uint16_t pulse = period * 2;
+
+    timer_set_period(TIM3, period); 
+    timer_set_oc_value(TIM3, TIM_OC2, pulse);
+    timer_enable_oc_output(TIM3, TIM_OC2);
     timer_enable_counter(TIM3);
     if(millis > -1) {
         delay(millis);
@@ -113,10 +124,10 @@ static void tone(uint16_t frequency, int32_t millis) {
 static void game_over(void) {
     reset_game();
 
-    gpio_toggle(GPIOA, GPIO9);
+    gpio_toggle(GPIOB, GPIO1);
     tone(ERROR_TONE, 1000);
     delay(NEXT_GAME_PAUSE_DURATION * 2);
-    gpio_toggle(GPIOA, GPIO9);
+    gpio_toggle(GPIOB, GPIO1);
     delay(NEXT_GAME_PAUSE_DURATION * 2);
 }
 
@@ -233,6 +244,7 @@ static void clock_setup(void) {
 
 static void gpio_setup(void) {
     rcc_periph_clock_enable(RCC_GPIOA);
+    rcc_periph_clock_enable(RCC_GPIOB);
 
     // set up pins for the 4 leds
     gpio_mode_setup(GPIOA, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, 
@@ -244,12 +256,12 @@ static void gpio_setup(void) {
         GPIO4 | GPIO5 | GPIO6 | GPIO10);
 
     // set up the pin for the FAIL led
-    gpio_mode_setup(GPIOA, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE,
-        GPIO9);
+    gpio_mode_setup(GPIOB, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE,
+        GPIO1);
 
     // set up the pin for the timer output (for the little buzzer)
     gpio_mode_setup(GPIOA, GPIO_MODE_AF, GPIO_OTYPE_PP, GPIO7);
-    gpio_set_output_options(GPIOA, GPIO_OTYPE_PP, GPIO_OSPEED_LOW, GPIO7);
+    gpio_set_output_options(GPIOA, GPIO_OTYPE_PP, GPIO_OSPEED_HIGH, GPIO7);
 
     // GPIO_AF2 == TIM3, CHANNEL 2 for PA7 (see on page 31 of the datasheet)
     gpio_set_af(GPIOA, GPIO_AF1, GPIO7);
@@ -259,13 +271,12 @@ static void timer_setup(void) {
     rcc_periph_clock_enable(RCC_TIM3);
     timer_reset(TIM3);
     timer_set_mode(TIM3, TIM_CR1_CKD_CK_INT, TIM_CR1_CMS_EDGE, TIM_CR1_DIR_UP);
-    timer_set_prescaler(TIM3, 4);
+    timer_set_prescaler(TIM3, TIM3_PRESCALER);
     timer_enable_preload(TIM3);
     timer_continuous_mode(TIM3);
     timer_enable_preload_complementry_enable_bits(TIM3);
     timer_disable_oc_output(TIM3, TIM_OC2);
     timer_set_oc_mode(TIM3, TIM_OC2, TIM_OCM_TOGGLE);
-    timer_enable_oc_output(TIM3, TIM_OC2);
 }
 
 static void random_seed(void) {
