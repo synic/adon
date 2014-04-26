@@ -103,16 +103,13 @@ static void tone_off(void) {
 static void tone(uint16_t frequency, int32_t millis) {
     timer_disable_oc_output(TIM3, TIM_OC2);
 
-    frequency *= 12;
 
     uint8_t prescaler = TIM3_PRESCALER;
     uint16_t clock = F_CPU / prescaler;
     uint16_t div = clock / frequency;
     uint16_t period = (clock / div) - 1;
-    uint16_t pulse = period * 2;
 
     timer_set_period(TIM3, period); 
-    timer_set_oc_value(TIM3, TIM_OC2, pulse);
     timer_enable_oc_output(TIM3, TIM_OC2);
     timer_enable_counter(TIM3);
     if(millis > -1) {
