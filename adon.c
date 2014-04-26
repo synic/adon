@@ -12,9 +12,10 @@
 #define NOTE_A3                         220
 #define NOTE_E2                         82
 #define NOTE_C3                         131
+#define NOTE_C2                         65
 #define NOTE_A5                         880
 
-#define ERROR_TONE                      NOTE_E2
+#define ERROR_TONE                      NOTE_C2
 #define WON_TONE                        NOTE_A5
 #define MAX_LEVELS                      20
 #define NEXT_GAME_PAUSE_DURATION        800
@@ -102,14 +103,11 @@ static void tone_off(void) {
 
 static void tone(uint16_t frequency, int32_t millis) {
     timer_disable_oc_output(TIM3, TIM_OC2);
+    frequency += 200;
 
+    int val = ((F_CPU / TIM3_PRESCALER) / (frequency * 2.0)) - 1;
 
-    uint8_t prescaler = TIM3_PRESCALER;
-    uint16_t clock = F_CPU / prescaler;
-    uint16_t div = clock / frequency;
-    uint16_t period = (clock / div) - 1;
-
-    timer_set_period(TIM3, period); 
+    timer_set_period(TIM3, val); 
     timer_enable_oc_output(TIM3, TIM_OC2);
     timer_enable_counter(TIM3);
     if(millis > -1) {
