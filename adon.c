@@ -103,7 +103,7 @@ static void tone_off(void) {
 
 static void tone(uint16_t frequency, int32_t millis) {
     timer_disable_oc_output(TIM3, TIM_OC2);
-    frequency += 200;
+    frequency += 100;
 
     int val = ((F_CPU / TIM3_PRESCALER) / (frequency * 2.0)) - 1;
 
