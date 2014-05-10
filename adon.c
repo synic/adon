@@ -184,6 +184,7 @@ static void setup_level(void) {
 static void button_press(uint8_t index) {
     gpio_set(GPIOA, LEDS[index]);
     tone(TONE_FOR_BUTTON[index], -1);
+    loop_count = 0;
 }
 
 static void button_release(uint8_t index) {
