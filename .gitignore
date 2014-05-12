@@ -66,3 +66,5 @@ eagle.epf
 *.info
 
 *.eps
+kicad/gerber/
+_autosave*
