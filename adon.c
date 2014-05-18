@@ -27,10 +27,8 @@
 #define MAX_LOOPS                       (F_CPU * 4) / 64
 #define TIM3_PRESCALER                  4
 
-#define FLASH_RAND_OPERATION_ADDRESS    ((uint32_t)0x08003800)
-#define FLASH_PAGE_SIZE                 0x800
-#define FLASH_WRONG_DATA_WRITTEN        0x80
-#define FLASH_RAND_BUFFER_SIZE          4
+#define FLASH_RAND_OPERATION_ADDRESS    ((uint32_t)0x08003c00)
+#define FLASH_PAGE_SIZE                 0x400
 #define RESULT_OK                       0
 
 const uint8_t LEDS[4] = {GPIO0, GPIO1, GPIO2, GPIO3};
@@ -77,12 +75,14 @@ static uint32_t flash_program_data(uint32_t start_address, uint32_t data) {
     flash_erase_page(page_address);
     flash_status = flash_get_status_flags();
     if(flash_status != FLASH_SR_EOP) {
+        flash_lock();
         return flash_status;
     }
 
     flash_program_word(current_address, data);
     flash_status = flash_get_status_flags();
     if(flash_status != FLASH_SR_EOP) {
+        flash_lock();
         return flash_status;
     }
 
