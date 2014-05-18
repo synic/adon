@@ -86,6 +86,8 @@ static uint32_t flash_program_data(uint32_t start_address, uint32_t data) {
         return flash_status;
     }
 
+    flash_lock();
+
     return 0;
 }
 
