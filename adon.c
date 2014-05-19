@@ -30,6 +30,7 @@
 #define FLASH_RAND_OPERATION_ADDRESS    ((uint32_t)0x08003c00)
 #define FLASH_PAGE_SIZE                 0x400
 #define RESULT_OK                       0
+#define RAND_INIT_COUNT                 10
 
 const uint8_t LEDS[4] = {GPIO0, GPIO1, GPIO2, GPIO3};
 const uint16_t BUTTONS[4] = {GPIO4, GPIO5, GPIO6, GPIO10};
@@ -279,10 +280,12 @@ static void timer_setup(void) {
 
 static void random_seed(void) {
     uint32_t data = flash_read_word(FLASH_RAND_OPERATION_ADDRESS);
+    uint8_t i = 0;
+
     srand(data);
-    data = rand();
-    srand(data);
-    data = rand();
+    for(i = 0; i < RAND_INIT_COUNT; i++) {
+        data = rand();
+    }
     
     uint32_t result = flash_program_data(FLASH_RAND_OPERATION_ADDRESS, data);
 
