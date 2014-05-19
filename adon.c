@@ -281,6 +281,8 @@ static void random_seed(void) {
     uint32_t data = flash_read_word(FLASH_RAND_OPERATION_ADDRESS);
     srand(data);
     data = rand();
+    srand(data);
+    data = rand();
     
     uint32_t result = flash_program_data(FLASH_RAND_OPERATION_ADDRESS, data);
 
